@@ -1,0 +1,6 @@
+.Paddle {
+  width: 100px;
+  height: 25px;
+  background-color: salmon;
+  border-radius: 4px;
+}
