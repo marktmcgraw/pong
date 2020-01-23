@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./styles.css";
 import Paddle from "./components/Paddle";
+import Ball from "./components/Ball";
 
 export default function App() {
   const [p1PaddleY, setP1PaddleY] = useState(0);
@@ -23,6 +24,7 @@ export default function App() {
     <div className="container">
       <Paddle paddleY={p1PaddleY} />
       <Paddle isPlayerTwo paddleY={p2PaddleY} />
+      <Ball />
     </div>
   );
 }
