@@ -1,6 +1,7 @@
 import React, { useReducer, useEffect } from "react";
 import "./styles.css";
 import Paddle from "./components/Paddle";
+import Ball from "./components/Ball";
 
 const initialState = {
   paddle1: {
@@ -8,6 +9,12 @@ const initialState = {
   },
   paddle2: {
     y: 0
+  },
+  ball: {
+    x: 0,
+    y: 0,
+    dx: 5,
+    dy: 5
   }
 };
 
@@ -17,6 +24,8 @@ function reducer(state, action) {
       return { ...state, paddle1: action.payload };
     case "MOVE_PADDLE_2":
       return { ...state, paddle2: action.payload };
+    case "MOVE_BALL":
+      return { ...state, ball: action.payload };
     default:
       throw new Error();
   }
@@ -44,40 +53,46 @@ export default function App() {
       });
     }
   }
+
   useEffect(() => {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [state]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      let dx = state.ball.dx;
+      let dy = state.ball.dy;
+      if (
+        state.ball.x + state.ball.dx > 400 - 20 ||
+        state.ball.x + state.ball.dx < 0
+      ) {
+        dx = -dx;
+      }
+      if (
+        state.ball.y + state.ball.dy > 300 - 20 ||
+        state.ball.y + state.ball.dy < 0
+      ) {
+        dy = -dy;
+      }
+      dispatch({
+        type: "MOVE_BALL",
+        payload: {
+          dx,
+          dy,
+          x: state.ball.x + dx,
+          y: state.ball.y + dy
+        }
+      });
+    }, 50);
+    return () => clearTimeout(handle);
+  }, [state.ball]);
+
   return (
     <div className="container">
       <Paddle paddleY={state.paddle1.y} />
       <Paddle isPlayerTwo paddleY={state.paddle2.y} />
+      <Ball pos={state.ball} />
     </div>
   );
 }
-
-// export default function App() {
-//   const [p1PaddleY, setP1PaddleY] = useState(0);
-//   const [p2PaddleY, setP2PaddleY] = useState(0);
-
-//   function handleKey(e) {
-//     const char = e.key.toLowerCase();
-//     if (char === "w" || char === "s") {
-//       setP1PaddleY(p1PaddleY + (char === "w" ? -10 : 10));
-//     }
-//     if (char === "o" || char === "l") {
-//       setP2PaddleY(p2PaddleY + (char === "o" ? -10 : 10));
-//     }
-//   }
-//   useEffect(() => {
-//     window.addEventListener("keydown", handleKey);
-//     return () => window.removeEventListener("keydown", handleKey);
-//   }, [p1PaddleY, p2PaddleY]);
-//   return (
-//     <div className="container">
-//       <Paddle paddleY={p1PaddleY} />
-//       <Paddle isPlayerTwo paddleY={p2PaddleY} />
-//       <Ball />
-//     </div>
-//   );
-// }
