@@ -5,14 +5,16 @@ import Ball from "./components/Ball";
 
 const initialState = {
   paddle1: {
-    y: 0
+    y: 0,
+    dy: 0
   },
   paddle2: {
-    y: 0
+    y: 0,
+    dy: 0
   },
   ball: {
-    x: 0,
-    y: 0,
+    x: 50,
+    y: 50,
     dx: 5,
     dy: 5
   }
@@ -21,26 +23,80 @@ const initialState = {
 function reducer(state, action) {
   switch (action.type) {
     case "MOVE_PADDLE_1":
-      return { ...state, paddle1: action.payload };
+      console.log("STATE: ", state);
+      console.log("ACTION: ", action);
+      return {
+        ...state,
+        paddle1: {
+          ...state.paddle1,
+          ...action.payload
+        }
+      };
     case "MOVE_PADDLE_2":
-      return { ...state, paddle2: action.payload };
-    case "MOVE_BALL":
-      return { ...state, ball: action.payload };
+      return {
+        ...state,
+        paddle2: {
+          ...state.paddle2,
+          ...action.payload
+        }
+      };
+    case "RENDER":
+      return {
+        ...state,
+        ball: { ...state.ball, ...action.payload.ball },
+        paddle1: { ...state.paddle1, ...action.payload.paddle1 },
+        paddle2: { ...state.paddle2, ...action.payload.paddle2 }
+      };
     default:
-      throw new Error();
+      throw new Error("Event not found: ", action.type);
   }
 }
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  function handleKey(e) {
+  function handleKeyDown(e) {
+    const char = e.key.toLowerCase();
+    if (char === "w" && state.paddle1.dy !== -10) {
+      dispatch({
+        type: "MOVE_PADDLE_1",
+        payload: {
+          dy: -10
+        }
+      });
+    }
+    if (char === "s" && state.paddle1.dy !== 10) {
+      dispatch({
+        type: "MOVE_PADDLE_1",
+        payload: {
+          dy: 10
+        }
+      });
+    }
+    if (char === "o" && state.paddle2.dy !== -10) {
+      dispatch({
+        type: "MOVE_PADDLE_2",
+        payload: {
+          dy: -10
+        }
+      });
+    }
+    if (char === "l" && state.paddle2.dy !== 10) {
+      dispatch({
+        type: "MOVE_PADDLE_2",
+        payload: {
+          dy: 10
+        }
+      });
+    }
+  }
+  function handleKeyUp(e) {
     const char = e.key.toLowerCase();
     if (char === "w" || char === "s") {
       dispatch({
         type: "MOVE_PADDLE_1",
         payload: {
-          y: state.paddle1.y + (char === "w" ? -10 : 10)
+          dy: 0
         }
       });
     }
@@ -48,48 +104,126 @@ export default function App() {
       dispatch({
         type: "MOVE_PADDLE_2",
         payload: {
-          y: state.paddle2.y + (char === "o" ? -10 : 10)
+          dy: 0
         }
       });
     }
   }
-
   useEffect(() => {
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [state]);
+  useEffect(() => {
+    window.addEventListener("keyup", handleKeyUp);
+    return () => window.removeEventListener("keyup", handleKeyUp);
   }, [state]);
 
   useEffect(() => {
     const handle = setTimeout(() => {
+      let x = state.ball.x;
+      let y = state.ball.y;
+
       let dx = state.ball.dx;
       let dy = state.ball.dy;
+
+      let p1y = state.paddle1.y;
+      let p2y = state.paddle2.y;
+
+      let p1dy = state.paddle1.dy;
+      let p2dy = state.paddle2.dy;
+
+      if (x + dx > 400 - 20 || x + dx < 0) {
+        dx = -dx;
+      }
+
+      if (y + dy > 300 - 20 || y + dy < 0) {
+        dy = -dy;
+      }
+
       if (
-        state.ball.x + state.ball.dx > 400 - 20 ||
-        state.ball.x + state.ball.dx < 0
+        (p1y < y + dy && p1y + 100 > y + dy && x < 45) ||
+        (p2y < y + dy && p2y + 100 > y + dy && x > 335)
       ) {
         dx = -dx;
       }
-      if (
-        state.ball.y + state.ball.dy > 300 - 20 ||
-        state.ball.y + state.ball.dy < 0
-      ) {
-        dy = -dy;
+      if (p1y + state.paddle1.dy > 300 - 100) {
+        p1y = 200;
+      } else if (p1y + state.paddle1.dy < 0) {
+        p1y = 0;
+      } else {
+        p1y = p1y + p1dy;
       }
+
+      if (p2y + state.paddle2.dy > 300 - 100) {
+        p2y = 200;
+      } else if (p2y + state.paddle2.dy < 0) {
+        p2y = 0;
+      } else {
+        p2y = p2y + p2dy;
+      }
+
       dispatch({
-        type: "MOVE_BALL",
+        type: "RENDER",
         payload: {
-          dx,
-          dy,
-          x: state.ball.x + dx,
-          y: state.ball.y + dy
+          ball: {
+            dx,
+            dy,
+            x: state.ball.x + dx,
+            y: state.ball.y + dy
+          },
+          paddle1: {
+            y: p1y,
+            dy: p1dy
+          },
+          paddle2: {
+            y: p2y,
+            dy: p2dy
+          }
         }
       });
     }, 50);
     return () => clearTimeout(handle);
-  }, [state.ball]);
+  }, [
+    state.ball,
+    state.paddle1.y,
+    state.paddle1.dy,
+    state.paddle2.y,
+    state.paddle2.dy
+  ]);
+
+  const obstacles = [
+    {
+      top: 10,
+      left: 190,
+      width: 20,
+      height: 20
+    },
+    {
+      top: 100,
+      left: 190,
+      width: 20,
+      height: 100
+    },
+    {
+      top: 260,
+      left: 190,
+      width: 20,
+      height: 20
+    }
+  ];
 
   return (
     <div className="container">
+      {obstacles.map(obstacle => (
+        <div
+          style={{
+            background: "#fff",
+            border: "2px solid #333",
+            position: "absolute",
+            ...obstacle
+          }}
+        />
+      ))}
       <Paddle paddleY={state.paddle1.y} />
       <Paddle isPlayerTwo paddleY={state.paddle2.y} />
       <Ball pos={state.ball} />
